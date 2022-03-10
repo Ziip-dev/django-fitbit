@@ -9,10 +9,10 @@ from collections import OrderedDict
 from dateutil import parser
 from django.core.cache import cache
 from django.core.files.uploadedfile import InMemoryUploadedFile
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.test.utils import override_settings
 from freezegun import freeze_time
-from mock import MagicMock, patch
+from unittest.mock import MagicMock, patch
 from requests_oauthlib import OAuth2Session
 
 from fitbit import exceptions as fitbit_exceptions
@@ -246,9 +246,25 @@ class TestRetrievalTask(FitappTestBase):
 
         self.assertEqual(tsd_apply_async.call_count, 2)
         tsd_apply_async.assert_any_call(
-            (fbuser.fitbit_user, foods, 'log/water',), kwargs, countdown=0)
+            (
+                fbuser.fitbit_user,
+                foods,
+                'log/water',
+            ),
+            kwargs,
+            serializer="pickle",
+            countdown=0
+        )
         tsd_apply_async.assert_any_call(
-            (fbuser.fitbit_user, foods, 'log/caloriesIn'), kwargs, countdown=5)
+            (
+                fbuser.fitbit_user,
+                foods,
+                'log/caloriesIn'
+            ),
+            kwargs,
+            serializer="pickle",
+            countdown=5
+        )
 
     @override_settings(FITAPP_SUBSCRIPTIONS=OrderedDict([
         ('foods', ['log/water', 'log/caloriesIn', 'bogus']),
@@ -304,8 +320,14 @@ class TestRetrievalTask(FitappTestBase):
         resources = TimeSeriesDataType.objects.filter(category=category)
         self.assertEqual(TimeSeriesData.objects.count(), 0)
         result = get_time_series_data.apply_async(
-            (self.fbuser.fitbit_user, _type.category, _type.resource,),
-            {'date': parser.parse(self.date)})
+            (
+                self.fbuser.fitbit_user,
+                _type.category,
+                _type.resource,
+            ),
+            {'date': parser.parse(self.date)},
+            serializer="pickle",
+        )
         result.get()
         # Since celery is in eager mode, we expect a Retry exception first
         # and then a second task execution that is successful
@@ -328,8 +350,14 @@ class TestRetrievalTask(FitappTestBase):
         self.assertEqual(TimeSeriesData.objects.count(), 0)
 
         result = get_time_series_data.apply_async(
-            (self.fbuser.fitbit_user, _type.category, _type.resource,),
-            {'date': parser.parse(self.date)})
+            (
+                self.fbuser.fitbit_user,
+                _type.category,
+                _type.resource,
+            ),
+            {'date': parser.parse(self.date)},
+            serializer="pickle",
+            )
 
         # 22 = 21 + x ** 0
         get_time_series_data.retry.assert_called_once_with(
@@ -350,8 +378,14 @@ class TestRetrievalTask(FitappTestBase):
         self.assertEqual(TimeSeriesData.objects.count(), 0)
 
         result = get_time_series_data.apply_async(
-            (self.fbuser.fitbit_user, _type.category, _type.resource,),
-            {'date': parser.parse(self.date)})
+            (
+                self.fbuser.fitbit_user,
+                _type.category,
+                _type.resource,
+            ),
+            {'date': parser.parse(self.date)},
+            serializer="pickle",
+        )
 
         self.assertEqual(result.successful(), True)
         self.assertEqual(result.result, None)
@@ -360,8 +394,14 @@ class TestRetrievalTask(FitappTestBase):
         _type = TimeSeriesDataType.objects.get(
             category=TimeSeriesDataType.activities, resource='floors')
         result = get_time_series_data.apply_async(
-            (self.fbuser.fitbit_user, _type.category, _type.resource,),
-            {'date': parser.parse(self.date)})
+            (
+                self.fbuser.fitbit_user,
+                _type.category,
+                _type.resource,
+            ),
+            {'date': parser.parse(self.date)},
+            serializer="pickle",
+        )
 
         self.assertEqual(result.successful(), True)
         self.assertEqual(result.result, None)
@@ -370,8 +410,14 @@ class TestRetrievalTask(FitappTestBase):
         _type = TimeSeriesDataType.objects.get(
             category=TimeSeriesDataType.activities, resource='steps')
         result = get_time_series_data.apply_async(
-            (self.fbuser.fitbit_user, _type.category, _type.resource,),
-            {'date': parser.parse(self.date)})
+            (
+                self.fbuser.fitbit_user,
+                _type.category,
+                _type.resource,
+            ),
+            {'date': parser.parse(self.date)},
+            serializer="pickle",
+        )
 
         self.assertEqual(result.successful(), False)
         self.assertEqual(type(result.result), celery.exceptions.Reject)

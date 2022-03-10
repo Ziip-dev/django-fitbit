@@ -8,12 +8,12 @@ from datetime import datetime
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.models import AnonymousUser
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.http import HttpRequest
 from django.test.utils import override_settings
 from fitbit.exceptions import HTTPConflict
 from freezegun import freeze_time
-from mock import patch
+from unittest.mock import patch
 from requests.auth import _basic_auth_str
 
 from fitapp import utils

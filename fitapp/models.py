@@ -1,22 +1,17 @@
 from django.conf import settings
 from django.db import models
-from django.utils.encoding import python_2_unicode_compatible
 
 
 UserModel = getattr(settings, 'AUTH_USER_MODEL', 'auth.User')
 
 
-@python_2_unicode_compatible
 class UserFitbit(models.Model):
     """ A user's fitbit credentials, allowing API access """
-    user = models.OneToOneField(
-        UserModel, help_text='The user')
-    fitbit_user = models.CharField(
-        max_length=32, unique=True, help_text='The fitbit user ID')
+    user = models.OneToOneField(UserModel, on_delete=models.CASCADE, help_text='The user')
+    fitbit_user = models.CharField(max_length=32, unique=True, help_text='The fitbit user ID')
     access_token = models.TextField(help_text='The OAuth2 access token')
     refresh_token = models.TextField(help_text='The OAuth2 refresh token')
-    expires_at = models.FloatField(
-        help_text='The timestamp when the access token expires')
+    expires_at = models.FloatField(help_text='The timestamp when the access token expires')
 
     def __str__(self):
         return self.user.__str__()
@@ -92,9 +87,8 @@ class TimeSeriesData(models.Model):
     https://dev.fitbit.com/docs/body/#body-time-series
     """
 
-    user = models.ForeignKey(UserModel, help_text="The data's user")
-    resource_type = models.ForeignKey(
-        TimeSeriesDataType, help_text='The type of time series data')
+    user = models.ForeignKey(UserModel, on_delete=models.CASCADE, help_text="The data's user")
+    resource_type = models.ForeignKey(TimeSeriesDataType, on_delete=models.CASCADE, help_text='The type of time series data')
     date = models.DateField(help_text='The date the data was recorded')
     value = models.CharField(
         null=True,
