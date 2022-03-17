@@ -2,6 +2,7 @@
 ------------------
 
 - Updating to python 3.10 and Django 4.0 compatibility
+- Update dependencies
 
 0.3.0 (2017-01-25)
 ------------------

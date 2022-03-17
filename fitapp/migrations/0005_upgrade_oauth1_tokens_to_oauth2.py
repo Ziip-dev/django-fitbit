@@ -1,4 +1,4 @@
-from django.db import migrations, models
+from django.db import migrations
 
 from fitbit.api import FitbitOauth2Client
 from fitapp.utils import get_setting

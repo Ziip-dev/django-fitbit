@@ -1,4 +1,3 @@
-from functools import cmp_to_key
 import simplejson as json
 
 from dateutil import parser
@@ -13,13 +12,11 @@ from django.shortcuts import redirect, render
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET
-from six import string_types
 
 from fitbit.exceptions import (HTTPUnauthorized, HTTPForbidden, HTTPConflict,
                                HTTPServerError)
 
-from . import forms
-from . import utils
+from . import forms, utils
 from .models import UserFitbit, TimeSeriesData, TimeSeriesDataType
 from .tasks import get_time_series_data, subscribe, unsubscribe
 
@@ -325,7 +322,7 @@ def normalize_date_range(request, fitbit_data):
     else:
         period = fitbit_data['period']
         if period != 'max':
-            if isinstance(base_date, string_types):
+            if isinstance(base_date, str):
                 start = parser.parse(base_date)
             else:
                 start = base_date

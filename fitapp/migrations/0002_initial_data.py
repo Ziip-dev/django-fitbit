@@ -2,9 +2,8 @@
 from __future__ import unicode_literals
 
 import os
-from sys import path
 from django.core import serializers
-from django.db import models, migrations
+from django.db import migrations
 
 fixture_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../fixtures'))
 fixture_filename = 'initial_data.json'
