@@ -42,6 +42,7 @@ def fitbit_integration_warning(msg=None):
     """
     if not msg:
         msg = utils.get_setting('FITAPP_DECORATOR_MESSAGE')
+
     def inner_decorator(view_func):
         def wrapped(request, *args, **kwargs):
             user = request.user
