@@ -4,7 +4,8 @@ FITAPP_CONSUMER_KEY = None
 FITAPP_CONSUMER_SECRET = None
 
 # The verification code for verifying subscriber endpoints
-FITAPP_VERIFICATION_CODE = None
+FITAPP_VERIFICATION_CODE = None  ############
+# FITAPP_VERIFICATION_CODE = '452b4b45628977dcce960f240fdc857fa70193308204d8735b3c162eb42ff450'
 
 # Where to redirect to after Fitbit authentication is successfully completed.
 FITAPP_LOGIN_REDIRECT = '/'
@@ -14,7 +15,7 @@ FITAPP_LOGIN_REDIRECT = '/'
 FITAPP_LOGOUT_REDIRECT = '/'
 
 # By default, don't subscribe to user data. Set this to true to subscribe.
-FITAPP_SUBSCRIBE = False
+FITAPP_SUBSCRIBE = False  ############
 # Only retrieve data for resources in FITAPP_SUBSCRIPTIONS. The default value
 # of none results in all subscriptions being retrieved. Override it to be an
 # OrderedDict of just the items you want retrieved, in the order you want them
@@ -25,7 +26,7 @@ FITAPP_SUBSCRIBE = False
 #     ])
 # The default ordering is ['category', 'resource'] when a subscriptions dict is
 # not specified.
-FITAPP_SUBSCRIPTIONS = None
+FITAPP_SUBSCRIPTIONS = None  ############
 
 # The initial delay (in seconds) when doing the historical data import
 FITAPP_HISTORICAL_INIT_DELAY = 10
