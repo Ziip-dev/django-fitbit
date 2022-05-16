@@ -16,5 +16,4 @@ urlpatterns = [
     # Fitbit data retrieval
     re_path(r'^get_data/(?P<category>[\w]+)/(?P<resource>[/\w]+)/$',
         views.get_data, name='fitbit-data'),
-    re_path(r'^get_steps/$', views.get_steps, name='fitbit-steps')
 ]

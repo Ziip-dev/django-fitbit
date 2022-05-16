@@ -46,7 +46,6 @@ def login(request):
     callback_uri = request.build_absolute_uri(reverse('fitbit-complete'))
     fb = utils.create_fitbit(callback_uri=callback_uri)
     token_url, code = fb.client.authorize_token_url(redirect_uri=callback_uri)
-
     return redirect(token_url)
 
 
@@ -341,19 +340,6 @@ def normalize_date_range(request, fitbit_data):
 
 
 @require_GET
-def get_steps(request):
-    """An AJAX view that retrieves this user's step data from Fitbit.
-
-    This view has been deprecated. Use `get_data` instead.
-
-    URL name:
-        `fitbit-steps`
-    """
-
-    return get_data(request, 'activities', 'steps')
-
-
-@require_GET
 def get_data(request, category, resource):
     """An AJAX view that retrieves this user's data from Fitbit.
 
@@ -363,9 +349,8 @@ def get_data(request, category, resource):
 
     The two parameters, category and resource, determine which type of data
     to retrieve. The category parameter can be one of: foods, activities,
-    sleep, and body. It's the first part of the path in the items listed at
-    https://wiki.fitbit.com/display/API/API-Get-Time-Series
-    The resource parameter should be the rest of the path.
+    sleep, and body. The resource parameter should be the rest of
+    https://dev.fitbit.com/build/reference/web-api/activity-timeseries/get-activity-timeseries-by-date/#Resource-Options
 
     To retrieve a specific time period, two GET parameters are used:
 
@@ -424,29 +409,33 @@ def get_data(request, category, resource):
     except:
         return make_response(104)
 
+    # Check if the user has a subscribed fitbit integration
     fitapp_subscribe = utils.get_setting('FITAPP_SUBSCRIBE')
     if not user.is_authenticated or not user.is_active:
         return make_response(101)
     if not fitapp_subscribe and not utils.is_integrated(user):
         return make_response(102)
 
+    # Retrieve GET parameters
     base_date = request.GET.get('base_date', None)
     period = request.GET.get('period', None)
     end_date = request.GET.get('end_date', None)
+
+    # Select the correct endpoint regarding the retrieved parameters
     if period and not end_date:
         form = forms.PeriodForm({'base_date': base_date, 'period': period})
     elif end_date and not period:
         form = forms.RangeForm({'base_date': base_date, 'end_date': end_date})
     else:
-        # Either end_date or period, but not both, must be specified.
+        # either end_date or period, but not both, must be specified.
         return make_response(104)
 
     fitbit_data = form.get_fitbit_data()
     if not fitbit_data:
         return make_response(104)
 
+    # Request data directly from the database if the user is suscribed to automated Fitbit updates.
     if fitapp_subscribe:
-        # Get the data directly from the database.
         date_range = normalize_date_range(request, fitbit_data)
         existing_data = TimeSeriesData.objects.filter(
             user=user, resource_type=resource_type, **date_range)
