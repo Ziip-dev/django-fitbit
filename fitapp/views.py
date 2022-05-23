@@ -217,8 +217,6 @@ def update(request):
     """Receive notification from Fitbit or verify subscriber endpoint.
 
     Loop through the updates and create celery tasks to get the data.
-    More information here:
-    https://wiki.fitbit.com/display/API/Fitbit+Subscriptions+API
 
     For verification, we expect two GET requests:
     1. Contains a verify query param containing the verification code we
@@ -226,8 +224,9 @@ def update(request):
        respond with a HTTP 204 code.
     2. Contains a verify query param containing a purposefully invalid
        verification code. We should respond with a 404
+
     More information here:
-    https://dev.fitbit.com/docs/subscriptions/#verify-a-subscriber
+    https://dev.fitbit.com/build/reference/web-api/developer-guide/using-subscriptions/#Verifying-a-Subscriber
 
     URL name:
         `fitbit-update`
@@ -282,12 +281,15 @@ def update(request):
             return HttpResponseServerError(getattr(e, 'message', e.args[0]))
 
         return HttpResponse(status=204)
+
+
     elif request.method == 'GET':
         # Verify fitbit subscriber endpoints
         verification_code = utils.get_setting('FITAPP_VERIFICATION_CODE')
         verify = request.GET.get('verify', None)
         if verify and verify == verification_code:
             return HttpResponse(status=204)
+
 
     # if someone enters the url into the browser, raise a 404
     raise Http404
