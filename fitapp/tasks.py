@@ -52,16 +52,17 @@ def get_time_series_data(self, fitbit_user, cat, resource, date=None):
     """ Get the user's time series data """
 
     try:
+        # Retrieve the (category, resource) pair in the database
         _type = TimeSeriesDataType.objects.get(category=cat, resource=resource)
     except TimeSeriesDataType.DoesNotExist as e:
-        logger.exception("The resource %s in category %s doesn't exist" % (
-            resource, cat))
+        logger.exception(f"The resource {resource} in category {cat} doesn't exist")
         raise Reject(e, requeue=False)
 
     # Create a lock so we don't try to run the same task multiple times
     sdat = date.strftime('%Y-%m-%d') if date else 'ALL'
 
-    lock_id = '{0}-lock-{1}-{2}-{3}'.format(__name__, fitbit_user, _type, sdat)
+    # lock_id = '{0}-lock-{1}-{2}-{3}'.format(__name__, fitbit_user, _type, sdat)
+    lock_id = f'{__name__}-lock-{fitbit_user}-{_type}-{sdat}'
     if not cache.add(lock_id, 'true', LOCK_EXPIRE):
         logger.debug('Already retrieving %s data for date %s, user %s' % (
             _type, fitbit_user, sdat))

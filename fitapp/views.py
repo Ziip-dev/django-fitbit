@@ -110,8 +110,7 @@ def complete(request):
             return redirect(reverse('fitbit-error'))
         subscribe.apply_async((fbuser.fitbit_user, SUBSCRIBER_ID), countdown=5)
         tsdts = TimeSeriesDataType.objects.all()
-        # If FITAPP_SUBSCRIPTIONS is specified, narrow the list of data types
-        # to retrieve
+        # If FITAPP_SUBSCRIPTIONS is specified, narrow the list of data types to retrieve
         if subs is not None:
             cats = list(map(
                 lambda k: getattr(TimeSeriesDataType, k),
@@ -233,14 +232,23 @@ def update(request):
     """
 
     # The updates can come in two ways:
-    # 1. A json body in a POST request
+    # 1. A json body in a POST request --> better, configurable on fitbit application settings
     # 2. A json file in a form POST
     if request.method == 'POST':
+        print(vars(request))  # DEBUG
         try:
+            # for a json body (case 1.)
             body = request.body
+
+            # for a json file (case 2.)
             if request.FILES and 'updates' in request.FILES:
                 body = request.FILES['updates'].read()
+
+            # populate the updates we have to deal with from fitbit notification
             updates = json.loads(body.decode('utf8'))
+            print(f'updates = {updates}')  # DEBUG
+        
+        # Decode error handling
         except json.JSONDecodeError:
             raise Http404
 
@@ -249,28 +257,46 @@ def update(request):
             subs = utils.get_setting('FITAPP_SUBSCRIPTIONS')
             btw_delay = utils.get_setting('FITAPP_BETWEEN_DELAY')
             all_tsdts = list(TimeSeriesDataType.objects.all())
+            print(f'all_tsdts = {all_tsdts}')  # DEBUG
+            
+            # Loop through available updates
             for update in updates:
                 c_type = update['collectionType']
+                print(f'c_type = {c_type}')  # DEBUG
+                
+                # Check if we want to retrieve the given data type, next update if not
                 if subs is not None and c_type not in subs:
                     continue
+
+                # Retrieve wanted data type category, then only keep matching (category, resource) in tsdts
                 cat = getattr(TimeSeriesDataType, c_type)
+                print(f'cat = {cat}')  # DEBUG
                 tsdts = filter(lambda tsdt: tsdt.category == cat, all_tsdts)
+                print(f'tsdts = {tsdts}')  # DEBUG
+
                 if subs is not None:
+                    # Get the list of resources associated with the matching category type
                     res_list = subs[c_type]
+                    print(f'res_list = {res_list}')  # DEBUG
+                    # Furhter filter down (category, resource) to match the specifically wanted resources
                     tsdts = sorted(
                         filter(lambda tsdt: tsdt.resource in res_list, tsdts),
                         key=lambda tsdt: res_list.index(tsdt.resource)
                     )
+
+                # Make all the necessary requests by looping the remaining (category, resource) in tsdts
                 for i, _type in enumerate(tsdts):
-                    # Offset each call by a few seconds so they don't bog down
-                    # the server
+                    # Offset each call by a few seconds so they don't bog down the server
                     get_time_series_data.apply_async(
+                        # get_time_series_data parameters
                         (
                             update['ownerId'],
                             _type.category,
                             _type.resource,
                         ),
                         {'date': parser.parse(update['date'])},
+
+                        # apply_async parameters
                         serializer="pickle",
                         countdown=(btw_delay * i)
                     )
