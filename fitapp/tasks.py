@@ -1,4 +1,4 @@
-import logging
+from celery.utils.log import get_task_logger
 import random
 
 from celery import shared_task
@@ -12,7 +12,7 @@ from . import utils
 from .models import UserFitbit, TimeSeriesData, TimeSeriesDataType
 
 
-logger = logging.getLogger(__name__)
+logger = get_task_logger(__name__)
 LOCK_EXPIRE = 60 * 5 # Lock expires in 5 minutes
 
 
@@ -26,7 +26,7 @@ def subscribe(fitbit_user, subscriber_id):
         try:
             fb.subscription(fbuser.user.id, subscriber_id)
         except Exception as e:
-            logger.exception("Error subscribing user: %s" % e)
+            logger.exception(f"Error subscribing user: {e}")
             raise Reject(e, requeue=False)
 
 
@@ -43,16 +43,16 @@ def unsubscribe(*args, **kwargs):
                 fb.subscription(sub['subscriptionId'], sub['subscriberId'],
                                 method="DELETE")
     except Exception as e:
-        logger.exception("Error unsubscribing user: %s" % e)
+        logger.exception(f"Error unsubscribing user: {e}")
         raise Reject(e, requeue=False)
 
 
 @shared_task(bind=True)
 def get_time_series_data(self, fitbit_user, cat, resource, date=None):
-    """ Get the user's time series data """
+    """ Get the user's time series data, one request per resource """
 
+    # Retrieve the (category, resource) pair in the database
     try:
-        # Retrieve the (category, resource) pair in the database
         _type = TimeSeriesDataType.objects.get(category=cat, resource=resource)
     except TimeSeriesDataType.DoesNotExist as e:
         logger.exception(f"The resource {resource} in category {cat} doesn't exist")
@@ -64,8 +64,7 @@ def get_time_series_data(self, fitbit_user, cat, resource, date=None):
     # lock_id = '{0}-lock-{1}-{2}-{3}'.format(__name__, fitbit_user, _type, sdat)
     lock_id = f'{__name__}-lock-{fitbit_user}-{_type}-{sdat}'
     if not cache.add(lock_id, 'true', LOCK_EXPIRE):
-        logger.debug('Already retrieving %s data for date %s, user %s' % (
-            _type, fitbit_user, sdat))
+        logger.debug(f"Already retrieving {_type} data for date {sdat}, user {fitbit_user}")
         raise Ignore()
 
     try:
@@ -83,12 +82,17 @@ def get_time_series_data(self, fitbit_user, cat, resource, date=None):
                 for datum in data:
                     # Create new record or update existing record
                     date = parser.parse(datum['dateTime'])
+
+
                     tsd, created = TimeSeriesData.objects.get_or_create(
                         user=fbuser.user, resource_type=_type, date=date)
+
+
                     tsd.value = datum['value']
                     tsd.save()
             # Release the lock
             cache.delete(lock_id)
+
     except HTTPTooManyRequests as e:
         # We have hit the rate limit for the user, retry when it's reset,
         # according to the reply from the failing API call
@@ -96,9 +100,9 @@ def get_time_series_data(self, fitbit_user, cat, resource, date=None):
             # Add exponential back-off + random jitter
             random.uniform(2, 4) ** self.request.retries
         )
-        logger.debug('Rate limit reached, will try again in {} seconds'.format(
-            countdown))
+        logger.debug('Rate limit reached, will try again in {} seconds'.format(countdown))
         raise get_time_series_data.retry(exc=e, countdown=countdown)
+
     except HTTPBadRequest as e:
         # If the resource is elevation or floors, we are just getting this
         # error because the data doesn't exist for this user, so we can ignore
@@ -106,6 +110,7 @@ def get_time_series_data(self, fitbit_user, cat, resource, date=None):
         if not ('elevation' in resource or 'floors' in resource):
             logger.exception("Exception updating data: ".format(e))
             raise Reject(e, requeue=False)
+
     except Exception as e:
-        logger.exception("Exception updating data: %s" % e)
+        logger.exception(f"Exception updating data: {e}")
         raise Reject(e, requeue=False)

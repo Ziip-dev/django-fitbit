@@ -97,19 +97,28 @@ def complete(request):
     # Add the Fitbit user info to the session
     fb = utils.create_fitbit(**fbuser.get_user_data())
     request.session['fitbit_profile'] = fb.user_profile_get()
+
+    # Check if subscription is ON
     if utils.get_setting('FITAPP_SUBSCRIBE'):
         init_delay = utils.get_setting('FITAPP_HISTORICAL_INIT_DELAY')
         btw_delay = utils.get_setting('FITAPP_BETWEEN_DELAY')
+
+        # Retrieve subscriptions list
         try:
             subs = utils.get_setting('FITAPP_SUBSCRIPTIONS')
         except ImproperlyConfigured as e:
             return HttpResponseServerError(getattr(e, 'message', e.args[0]))
+
+        # Retrieve subscriber ID
         try:
             SUBSCRIBER_ID = utils.get_setting('FITAPP_SUBSCRIBER_ID')
         except ImproperlyConfigured:
             return redirect(reverse('fitbit-error'))
+
+        # Subscribe to user data
         subscribe.apply_async((fbuser.fitbit_user, SUBSCRIBER_ID), countdown=5)
         tsdts = TimeSeriesDataType.objects.all()
+
         # If FITAPP_SUBSCRIPTIONS is specified, narrow the list of data types to retrieve
         if subs is not None:
             cats = list(map(
@@ -133,6 +142,7 @@ def complete(request):
                 (fbuser.fitbit_user, _type.category, _type.resource,),
                 countdown=init_delay + (i * btw_delay))
 
+    # Redirect to post-login URL
     next_url = request.session.pop('fitbit_next', None) or utils.get_setting(
         'FITAPP_LOGIN_REDIRECT')
     return redirect(next_url)
@@ -235,18 +245,23 @@ def update(request):
     # 1. A json body in a POST request --> better, configurable on fitbit application settings
     # 2. A json file in a form POST
     if request.method == 'POST':
-        print(vars(request))  # DEBUG
         try:
             # for a json body (case 1.)
             body = request.body
+            # body = b'[\n\t{\n\t\t"collectionType": "activities",\n\t\t"date": "2022-06-06",\n\t\t"ownerId": "7D8L5Z",
+            #                \n\t\t"ownerType": "user",\n\t\t"subscriptionId": "4"\n\t}\n]'
 
             # for a json file (case 2.)
             if request.FILES and 'updates' in request.FILES:
                 body = request.FILES['updates'].read()
 
-            # populate the updates we have to deal with from fitbit notification
+            # populate the updates we have to deal with from fitbit POST request:
             updates = json.loads(body.decode('utf8'))
-            print(f'updates = {updates}')  # DEBUG
+            # updates = [{'collectionType': 'activities',
+            #             'date': '2022-06-06',
+            #             'ownerId': '7D8L5Z',
+            #             'ownerType': 'user',
+            #             'subscriptionId': '4'}]
         
         # Decode error handling
         except json.JSONDecodeError:
@@ -257,12 +272,13 @@ def update(request):
             subs = utils.get_setting('FITAPP_SUBSCRIPTIONS')
             btw_delay = utils.get_setting('FITAPP_BETWEEN_DELAY')
             all_tsdts = list(TimeSeriesDataType.objects.all())
-            print(f'all_tsdts = {all_tsdts}')  # DEBUG
+            # all_tsdts = [<TimeSeriesDataType: activities/tracker/steps>,
+            #              <TimeSeriesDataType: sleep/awakeningsCount>, ...]
             
             # Loop through available updates
             for update in updates:
                 c_type = update['collectionType']
-                print(f'c_type = {c_type}')  # DEBUG
+                # c_type = 'activities'
                 
                 # Check if we want to retrieve the given data type, next update if not
                 if subs is not None and c_type not in subs:
@@ -270,14 +286,15 @@ def update(request):
 
                 # Retrieve wanted data type category, then only keep matching (category, resource) in tsdts
                 cat = getattr(TimeSeriesDataType, c_type)
-                print(f'cat = {cat}')  # DEBUG
+                # cat = 1
                 tsdts = filter(lambda tsdt: tsdt.category == cat, all_tsdts)
-                print(f'tsdts = {tsdts}')  # DEBUG
+                # tsdts = <filter object at 0x7f3af8553940>
 
                 if subs is not None:
                     # Get the list of resources associated with the matching category type
                     res_list = subs[c_type]
-                    print(f'res_list = {res_list}')  # DEBUG
+                    # res_list = ['steps', 'minutesSedentary', 'minutesLightlyActive', 'minutesFairlyActive', 'minutesVeryActive']
+
                     # Furhter filter down (category, resource) to match the specifically wanted resources
                     tsdts = sorted(
                         filter(lambda tsdt: tsdt.resource in res_list, tsdts),
