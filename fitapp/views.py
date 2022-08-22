@@ -262,7 +262,7 @@ def update(request):
             #             'ownerId': '7D8L5Z',
             #             'ownerType': 'user',
             #             'subscriptionId': '4'}]
-        
+
         # Decode error handling
         except json.JSONDecodeError:
             raise Http404
@@ -274,12 +274,12 @@ def update(request):
             all_tsdts = list(TimeSeriesDataType.objects.all())
             # all_tsdts = [<TimeSeriesDataType: activities/tracker/steps>,
             #              <TimeSeriesDataType: sleep/awakeningsCount>, ...]
-            
+
             # Loop through available updates
             for update in updates:
                 c_type = update['collectionType']
                 # c_type = 'activities'
-                
+
                 # Check if we want to retrieve the given data type, next update if not
                 if subs is not None and c_type not in subs:
                     continue

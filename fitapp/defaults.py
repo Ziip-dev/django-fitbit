@@ -5,15 +5,11 @@ FITAPP_CONSUMER_SECRET = None
 
 
 # The verification code for verifying subscriber endpoints (default to None)
-# FITAPP_VERIFICATION_CODE = '452b4b45628977dcce960f240fdc857fa70193308204d8735b3c162eb42ff450'
-# Testing with localtunnel for now, so this is for temp subscriber :)
-FITAPP_VERIFICATION_CODE = 'f8818d52509cd22f86712218ca0d8267f42e1a6b44efb08f9ddeef67616ab98c'
+FITAPP_VERIFICATION_CODE = '452b4b45628977dcce960f240fdc857fa70193308204d8735b3c162eb42ff450'
 
 # By default, don't subscribe to user data. Set this to true to subscribe (False)
 FITAPP_SUBSCRIBE = True
-# FITAPP_SUBSCRIBER_ID = 'PHDXP'
-# Testing with localtunnel for now, so this is for temp subscriber :)
-FITAPP_SUBSCRIBER_ID = 'PHDXP_TEST'
+FITAPP_SUBSCRIBER_ID = 'PHDXP'
 
 # Only retrieve data for resources in FITAPP_SUBSCRIPTIONS.
 # The default value of None results in all subscriptions being retrieved.
