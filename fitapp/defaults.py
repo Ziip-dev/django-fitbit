@@ -5,27 +5,18 @@ FITAPP_CONSUMER_SECRET = None
 
 
 # The verification code for verifying subscriber endpoints (default to None)
-FITAPP_VERIFICATION_CODE = '452b4b45628977dcce960f240fdc857fa70193308204d8735b3c162eb42ff450'
+FITAPP_VERIFICATION_CODE = None
 
 # By default, don't subscribe to user data. Set this to true to subscribe (False)
-FITAPP_SUBSCRIBE = True
-FITAPP_SUBSCRIBER_ID = 'PHDXP'
+FITAPP_SUBSCRIBE = False
+FITAPP_SUBSCRIBER_ID = None
 
 # Only retrieve data for resources in FITAPP_SUBSCRIPTIONS.
 # The default value of None results in all subscriptions being retrieved.
 # Override it to be an OrderedDict of just the items you want retrieved in the order.
 # The default ordering is ['category', 'resource'] when a subscriptions dict is
 # not specified.
-from collections import OrderedDict
-FITAPP_SUBSCRIPTIONS = OrderedDict([
-    # ('foods', ['log/caloriesIn', 'log/water']),
-    ('activities', ['steps',
-                    'minutesSedentary',
-                    'minutesLightlyActive',
-                    'minutesFairlyActive',
-                    'minutesVeryActive',
-                    ]),
-    ])
+FITAPP_SUBSCRIPTIONS = None
 
 
 # The initial delay (in seconds) when doing the historical data import
